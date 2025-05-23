@@ -22,7 +22,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -35,31 +34,100 @@ public class StripeWebhookService {
     private final UserRepository userRepository;
     private final ObjectMapper objectMapper;
 
+    /**
+     * Основной метод обработки любого Stripe-webhook'а.
+     */
     public void handleWebhook(String payload, String sigHeader) {
         Event event;
         try {
-            // проверяем подпись
             event = Webhook.constructEvent(payload, sigHeader, webhookSecret);
         } catch (SignatureVerificationException e) {
             throw new RuntimeException("Invalid Stripe signature", e);
         }
 
         switch (event.getType()) {
-            case "customer.subscription.created" -> onSubscriptionCreated(event);
-            case "customer.subscription.updated" -> onSubscriptionUpdated(event);
-            case "customer.subscription.deleted" -> onSubscriptionDeleted(event);
-            default -> {
-                // остальные события пока игнорируем
-            }
+            case "customer.subscription.created":
+                onCreated(event);
+                break;
+            case "customer.subscription.updated":
+                onUpdated(event);
+                break;
+            case "customer.subscription.deleted":
+                onDeleted(event);
+                break;
+            default:
+                // всё остальное — игнорируем
         }
     }
 
+    @Transactional
+    protected void onCreated(Event event) {
+        Subscription stripeSub = extractSubscription(event);
+        if (stripeSub == null) return;
+
+        User user = userRepository.findByStripeCustomerId(stripeSub.getCustomer())
+                .orElseThrow(() -> new NotFoundException("User not found"));
+
+        JsonNode data = parseRawJson(event);
+        long startEpoch = data.path("current_period_start").asLong(0L);
+        long endEpoch   = data.path("current_period_end").  asLong(0L);
+
+        SubscriptionEntity sub = SubscriptionEntity.builder()
+                .subscriber(user)
+                .channel(user)  // ваша логика: чей канал
+                .stripeSubscriptionId(stripeSub.getId())
+                .status(SubscriptionStatus.valueOf(stripeSub.getStatus().toUpperCase()))
+                .startDate(LocalDateTime.ofInstant(Instant.ofEpochSecond(startEpoch),
+                        ZoneId.systemDefault()))
+                .endDate(  LocalDateTime.ofInstant(Instant.ofEpochSecond(endEpoch),
+                        ZoneId.systemDefault()))
+                .build();
+
+        subscriptionRepository.save(sub);
+    }
+
+    @Transactional
+    protected void onUpdated(Event event) {
+        Subscription stripeSub = extractSubscription(event);
+        if (stripeSub == null) return;
+
+        subscriptionRepository.findByStripeSubscriptionId(stripeSub.getId())
+                .ifPresent(sub -> {
+                    sub.setStatus(SubscriptionStatus.valueOf(stripeSub.getStatus().toUpperCase()));
+
+                    JsonNode data = parseRawJson(event);
+                    long endEpoch = data.path("current_period_end").asLong(0L);
+                    sub.setEndDate(LocalDateTime.ofInstant(Instant.ofEpochSecond(endEpoch),
+                            ZoneId.systemDefault()));
+
+                    subscriptionRepository.save(sub);
+                });
+    }
+
+    @Transactional
+    protected void onDeleted(Event event) {
+        Subscription stripeSub = extractSubscription(event);
+        if (stripeSub == null) return;
+
+        subscriptionRepository.findByStripeSubscriptionId(stripeSub.getId())
+                .ifPresent(subscriptionRepository::delete);
+    }
+
     /**
-     * Берёт «сырую» JSON-строку из EventDataObjectDeserializer и парсит её в JsonNode.
+     * Извлекает объект Subscription из Event — без Optional.flatMap.
+     */
+    private Subscription extractSubscription(Event event) {
+        EventDataObjectDeserializer deser = event.getDataObjectDeserializer();
+        if (deser == null) return null;
+        Object obj = deser.getObject().orElse(null);
+        return (obj instanceof Subscription) ? (Subscription) obj : null;
+    }
+
+    /**
+     * Берёт «сырую» JSON-строку из webhook-пакета и парсит её в JsonNode.
      */
     private JsonNode parseRawJson(Event event) {
         EventDataObjectDeserializer deser = event.getDataObjectDeserializer();
-        // если десериализатор вдруг null или вернул null JSON — подставляем пустой объект
         String raw = "{}";
         if (deser != null && deser.getRawJson() != null) {
             raw = deser.getRawJson();
@@ -69,66 +137,5 @@ public class StripeWebhookService {
         } catch (JsonProcessingException e) {
             throw new RuntimeException("Cannot parse Stripe webhook JSON", e);
         }
-    }
-
-    @Transactional
-    protected void onSubscriptionCreated(Event event) {
-        Subscription stripeSub = extractSubscription(event);
-        if (stripeSub == null) return;
-
-        // 2) Находим нашего User
-        User user = userRepository.findByStripeCustomerId(stripeSub.getCustomer())
-                .orElseThrow(() -> new NotFoundException("User not found"));
-
-        // 3) Берём “сырую” JSON-строку и разбираем её
-        JsonNode node = parseRawJson(event);
-        long epochStart = node.path("current_period_start").asLong(0L);
-        long epochEnd = node.path("current_period_end").asLong(0L);
-
-        // 4) Сохраняем нашу сущность
-        SubscriptionEntity sub = SubscriptionEntity.builder()
-                .subscriber(user)
-                .channel(user)  // <-- ваша логика: на чей канал подписка
-                .stripeSubscriptionId(stripeSub.getId())
-                .status(SubscriptionStatus.valueOf(stripeSub.getStatus().toUpperCase()))
-                .startDate(LocalDateTime.ofInstant(Instant.ofEpochSecond(epochStart), ZoneId.systemDefault()))
-                .endDate(LocalDateTime.ofInstant(Instant.ofEpochSecond(epochEnd), ZoneId.systemDefault()))
-                .build();
-        subscriptionRepository.save(sub);
-    }
-
-    @Transactional
-    protected void onSubscriptionUpdated(Event event) {
-        Subscription stripeSub = extractSubscription(event);
-        if (stripeSub == null) return;
-
-        subscriptionRepository.findByStripeSubscriptionId(stripeSub.getId())
-                .ifPresent(sub -> {
-                    sub.setStatus(SubscriptionStatus.valueOf(stripeSub.getStatus().toUpperCase()));
-
-                    JsonNode node = parseRawJson(event);
-                    long epochEnd = node.path("current_period_end").asLong(0L);
-                    sub.setEndDate(LocalDateTime.ofInstant(Instant.ofEpochSecond(epochEnd), ZoneId.systemDefault()));
-
-                    subscriptionRepository.save(sub);
-                });
-    }
-
-    @Transactional
-    protected void onSubscriptionDeleted(Event event) {
-        Subscription stripeSub = extractSubscription(event);
-        if (stripeSub == null) return;
-
-        subscriptionRepository.findByStripeSubscriptionId(stripeSub.getId())
-                .ifPresent(subscriptionRepository::delete);
-    }
-
-    /**
-     * Безопасно достаёт Stripe Subscription из Event
-     */
-    private Subscription extractSubscription(Event event) {
-        return Optional.ofNullable(event.getDataObjectDeserializer())
-                .flatMap(d -> d.getObject().filter(o -> o instanceof Subscription).map(o -> (Subscription) o))
-                .orElse(null);
     }
 }

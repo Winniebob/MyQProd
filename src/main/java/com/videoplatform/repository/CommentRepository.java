@@ -19,8 +19,7 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
     // для полного дерева (List + Sort)
     List<Comment> findByVideoAndParentIsNull(Video video, Sort sort);
 
-    // постраничная выдача ответов
-    Page<Comment> findByParent(Comment parent, Pageable pageable);
+    List<Comment> findByParentId(Long parentId, Sort sort);
 
     // для полного дерева ответов
     List<Comment> findByParent(Comment parent, Sort sort);
