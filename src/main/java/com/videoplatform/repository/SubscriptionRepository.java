@@ -14,6 +14,7 @@ public interface SubscriptionRepository extends JpaRepository<SubscriptionEntity
 
     boolean existsBySubscriberAndChannel(User subscriber, User channel);
 
+    Optional<SubscriptionEntity> findByStripeSubscriptionId(String stripeId);
     Optional<SubscriptionEntity> findBySubscriberAndChannel(User subscriber, User channel);
 
     long countByChannel(User channel);
@@ -29,5 +30,5 @@ public interface SubscriptionRepository extends JpaRepository<SubscriptionEntity
     @Query("SELECT s.channel FROM SubscriptionEntity s GROUP BY s.channel ORDER BY COUNT(s) DESC")
     List<User> findTopCreators(Pageable pageable);
 
-    Optional<SubscriptionEntity> findByStripeSubscriptionId(String stripeSubscriptionId);
+
 }
