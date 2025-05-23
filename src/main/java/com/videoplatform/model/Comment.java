@@ -15,7 +15,7 @@ public class Comment {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
+    private Boolean deleted = false;
     // Видео, к которому относится комментарий
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "video_id", nullable = false)
@@ -36,4 +36,7 @@ public class Comment {
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    public void setDeleted(Boolean deleted) {
+        this.deleted = deleted;
+    }
 }

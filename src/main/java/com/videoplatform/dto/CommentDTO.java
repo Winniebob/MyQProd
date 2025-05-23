@@ -16,5 +16,6 @@ public class CommentDTO {
     private String text;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private Boolean deleted;
     private List<CommentDTO> children;
 }
