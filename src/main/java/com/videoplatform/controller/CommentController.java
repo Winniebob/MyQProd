@@ -23,37 +23,18 @@ public class CommentController {
     public ResponseEntity<CommentDTO> create(@RequestBody CreateCommentRequest req, Principal principal) {
         return ResponseEntity.ok(commentService.addComment(req, principal));
     }
-
     @PutMapping("/{id}")
-    public ResponseEntity<CommentDTO> update(
-            @PathVariable Long id,
-            @RequestBody UpdateCommentRequest req,
-            Principal principal
-    ) {
+    public ResponseEntity<CommentDTO> update(@PathVariable Long id,
+                                             @RequestBody UpdateCommentRequest req,
+                                             Principal principal) {
         return ResponseEntity.ok(commentService.updateComment(id, req, principal));
     }
-
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(
-            @PathVariable Long id,
-            Principal principal
-    ) {
+    public ResponseEntity<Void> delete(@PathVariable Long id, Principal principal) {
         commentService.deleteComment(id, principal);
         return ResponseEntity.noContent().build();
     }
-
-    /** Пагинация только корневых комментариев */
     @GetMapping("/video/{videoId}")
-    public ResponseEntity<Page<CommentDTO>> listRoot(
-            @PathVariable Long videoId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
-    ) {
-        return ResponseEntity.ok(commentService.listRootComments(videoId, page, size));
-    }
-
-    /** Всё дерево комментариев */
-    @GetMapping("/video/{videoId}/tree")
     public ResponseEntity<List<CommentDTO>> listTree(@PathVariable Long videoId) {
         return ResponseEntity.ok(commentService.listCommentTree(videoId));
     }

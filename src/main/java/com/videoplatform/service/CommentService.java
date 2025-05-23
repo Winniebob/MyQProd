@@ -3,128 +3,114 @@ package com.videoplatform.service;
 import com.videoplatform.dto.CommentDTO;
 import com.videoplatform.dto.CreateCommentRequest;
 import com.videoplatform.dto.UpdateCommentRequest;
-import com.videoplatform.exception.ForbiddenException;
 import com.videoplatform.exception.NotFoundException;
 import com.videoplatform.model.Comment;
-import com.videoplatform.model.Notification;
 import com.videoplatform.model.User;
 import com.videoplatform.model.Video;
 import com.videoplatform.repository.CommentRepository;
 import com.videoplatform.repository.UserRepository;
 import com.videoplatform.repository.VideoRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.Principal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class CommentService {
+    private final CommentRepository commentRepository;
+    private final VideoRepository videoRepository;
+    private final UserRepository userRepository;
 
-    private final CommentRepository commentRepo;
-    private final VideoRepository    videoRepo;
-    private final UserRepository     userRepo;
-    private final NotificationService notificationSvc;
-
+    /** 1. Добавление комментария (включая reply) */
     @Transactional
     public CommentDTO addComment(CreateCommentRequest req, Principal principal) {
-        User user = userRepo.findByUsername(principal.getName())
-                .orElseThrow(() -> new NotFoundException("User not found"));
-        Video video = videoRepo.findById(req.getVideoId())
+        Video video = videoRepository.findById(req.getVideoId())
                 .orElseThrow(() -> new NotFoundException("Video not found"));
+        User author = userRepository.findByUsername(principal.getName())
+                .orElseThrow(() -> new NotFoundException("User not found"));
 
         Comment parent = null;
         if (req.getParentId() != null) {
-            parent = commentRepo.findById(req.getParentId())
+            parent = commentRepository.findById(req.getParentId())
                     .orElseThrow(() -> new NotFoundException("Parent comment not found"));
         }
 
-        Comment c = Comment.builder()
-                .user(user)
+        Comment comment = Comment.builder()
                 .video(video)
-                .text(req.getText())
+                .author(author)
                 .parent(parent)
+                .text(req.getText())
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
                 .build();
-        commentRepo.save(c);
 
-        // уведомление автору видео (если это не он сам)
-        if (!video.getUser().getId().equals(user.getId())) {
-            notificationSvc.createNotification(
-                    video.getUser().getUsername(),
-                    Notification.NotificationType.NEW_COMMENT,
-                    "Новое сообщение под вашим видео"
-            );
-        }
-
-        return toDto(c);
+        Comment saved = commentRepository.save(comment);
+        return mapToDtoWithChildren(saved);
     }
 
+    /** 2. Обновление текста комментария */
     @Transactional
     public CommentDTO updateComment(Long id, UpdateCommentRequest req, Principal principal) {
-        Comment c = commentRepo.findById(id)
+        Comment comment = commentRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Comment not found"));
-        if (!c.getUser().getUsername().equals(principal.getName())) {
-            throw new ForbiddenException("Access denied");
-        }
-        c.setText(req.getText());
-        commentRepo.save(c);
-        return toDto(c);
+        // тут можно проверить, что principal соответствует author…
+
+        comment.setText(req.getText());
+        comment.setUpdatedAt(LocalDateTime.now());
+        Comment updated = commentRepository.save(comment);
+        return mapToDtoWithChildren(updated);
     }
 
+    /** 3. Удаление (можно мягкое или реальное) */
     @Transactional
     public void deleteComment(Long id, Principal principal) {
-        Comment c = commentRepo.findById(id)
+        Comment comment = commentRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Comment not found"));
-        if (!c.getUser().getUsername().equals(principal.getName())) {
-            // теперь передаём сообщение в конструктор
-            throw new ForbiddenException("You are not allowed to delete this comment");
-        }
-        commentRepo.delete(c);
+        // проверка principal == comment.getAuthor() ...
+        commentRepository.delete(comment);
     }
 
-    /** Пагинация только по корневым комментариям */
-    public Page<CommentDTO> listRootComments(Long videoId, int page, int size) {
-        Video video = videoRepo.findById(videoId)
-                .orElseThrow(() -> new NotFoundException("Video not found"));
-        Pageable pp = PageRequest.of(page, size, Sort.by("createdAt").ascending());
-        return commentRepo.findByVideoAndParentIsNull(video, pp)
-                .map(this::toDto);
-    }
-
-    /** Полное дерево комментариев */
-    public List<CommentDTO> listCommentTree(Long videoId) {
-        Video video = videoRepo.findById(videoId)
-                .orElseThrow(() -> new NotFoundException("Video not found"));
-
-        List<Comment> roots = commentRepo.findByVideoAndParentIsNull(video, Sort.by("createdAt").ascending());
-        return roots.stream()
-                .map(this::toTreeDto)
+    /** 4. Пагинация корневых комментариев */
+    public List<CommentDTO> listRootComments(Long videoId, int page, int size) {
+        Sort sort = Sort.by("createdAt").descending();
+        return commentRepository.findByVideoIdAndParentIsNull(videoId, sort).stream()
+                .skip((long) page * size)
+                .limit(size)
+                .map(this::mapToDtoWithChildren)
                 .collect(Collectors.toList());
     }
 
-    private CommentDTO toDto(Comment c) {
+    /** 5. Полное дерево комментариев без пагинации */
+    public List<CommentDTO> listCommentTree(Long videoId) {
+        Sort sort = Sort.by("createdAt");
+        List<Comment> roots = commentRepository.findByVideoIdAndParentIsNull(videoId, sort);
+        return roots.stream()
+                .map(this::mapToDtoWithChildren)
+                .collect(Collectors.toList());
+    }
+
+    /** Вспомогательный метод — строим рекурсивно дерево в DTO */
+    private CommentDTO mapToDtoWithChildren(Comment comment) {
+        List<CommentDTO> children = commentRepository.findByParentId(comment.getId(), Sort.by("createdAt"))
+                .stream()
+                .map(this::mapToDtoWithChildren)
+                .collect(Collectors.toList());
+
         return CommentDTO.builder()
-                .id(c.getId())
-                .userId(c.getUser().getId())
-                .username(c.getUser().getUsername())
-                .text(c.getText())
-                .createdAt(c.getCreatedAt())
-                .parentId(c.getParent() != null ? c.getParent().getId() : null)
+                .id(comment.getId())
+                .videoId(comment.getVideo().getId())
+                .parentId(comment.getParent() != null ? comment.getParent().getId() : null)
+                .authorUsername(comment.getAuthor().getUsername())
+                .text(comment.getText())
+                .createdAt(comment.getCreatedAt())
+                .updatedAt(comment.getUpdatedAt())
+                .children(children)
                 .build();
     }
-
-    private CommentDTO toTreeDto(Comment c) {
-        CommentDTO dto = toDto(c);
-        List<CommentDTO> replies = commentRepo.findByParent(c, Sort.by("createdAt").ascending())
-                .stream()
-                .map(this::toTreeDto)
-                .collect(Collectors.toList());
-        dto.setReplies(replies);
-        return dto;
-    }
-
 }

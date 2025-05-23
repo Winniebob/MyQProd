@@ -9,9 +9,9 @@ public class CreateCommentRequest {
     @NotNull
     private Long videoId;
 
-    // Optional: if replying to another comment
-    private Long parentId;
-
-    @NotBlank
+    @NotBlank(message = "Text не может быть пустым")
     private String text;
+
+    // Если это ответ на комментарий — его ID, иначе null
+    private Long parentId;
 }
