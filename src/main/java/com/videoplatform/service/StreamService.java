@@ -46,7 +46,7 @@ public class StreamService {
         }
 
         stream.setStatus(Stream.StreamStatus.LIVE);
-        stream.setIsLive(true);
+        stream.setLive(true);
         stream.setStartedAt(LocalDateTime.now());
         stream.setStreamUrl(generateStreamUrl(stream));
 
@@ -62,7 +62,7 @@ public class StreamService {
         }
 
         stream.setStatus(Stream.StreamStatus.STOPPED);
-        stream.setIsLive(false);
+        stream.setLive(false);
         stream.setStoppedAt(LocalDateTime.now());
         stream.setRecordingUrl(generateRecordingUrl(stream));
 
