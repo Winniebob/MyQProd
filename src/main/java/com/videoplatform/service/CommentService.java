@@ -10,7 +10,7 @@ import com.videoplatform.repository.VideoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import org.springframework.cache.annotation.Cacheable;
 import java.security.Principal;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -29,6 +29,17 @@ public class CommentService {
 
     @Transactional
     public CommentDTO addComment(CreateCommentRequest req, Principal principal) {
+        final int MAX_COMMENT_LENGTH = 1000;
+        final long COMMENT_COOLDOWN_SECONDS = 30;
+
+        String commentText = req.getText();
+        if (commentText == null || commentText.trim().isEmpty()) {
+            throw new IllegalArgumentException("Комментарий не может быть пустым");
+        }
+        if (commentText.length() > MAX_COMMENT_LENGTH) {
+            throw new IllegalArgumentException("Комментарий слишком длинный. Максимум " + MAX_COMMENT_LENGTH + " символов.");
+        }
+
         User author = userRepository.findByUsername(principal.getName())
                 .orElseThrow(() -> new NoSuchElementException("User not found"));
 
@@ -38,6 +49,14 @@ public class CommentService {
             Duration duration = Duration.between(lastComment.getCreatedAt(), LocalDateTime.now());
             if (duration.getSeconds() < COMMENT_COOLDOWN_SECONDS) {
                 throw new RuntimeException("Вы комментируете слишком часто. Подождите немного.");
+            }
+        }
+
+        // Проверка на повторяющийся текст с последних 5 комментариев
+        List<Comment> recentComments = commentRepository.findTop5ByAuthorOrderByCreatedAtDesc(author);
+        for (Comment c : recentComments) {
+            if (c.getText().equalsIgnoreCase(commentText.trim())) {
+                throw new IllegalArgumentException("Похожий комментарий уже был добавлен недавно");
             }
         }
 
@@ -54,7 +73,7 @@ public class CommentService {
                 .video(video)
                 .author(author)
                 .parent(parent)
-                .text(req.getText())
+                .text(commentText)
                 .createdAt(LocalDateTime.now())
                 .deleted(false)
                 .build();
@@ -68,6 +87,7 @@ public class CommentService {
         return mapToDtoWithChildren(saved);
     }
 
+    @Cacheable(value = "commentsTree", key = "#videoId")
     public List<CommentDTO> getCommentsTreeByVideoId(Long videoId) {
         List<Comment> comments = commentRepository.findByVideoIdAndDeletedFalse(videoId);
 
