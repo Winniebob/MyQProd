@@ -2,37 +2,27 @@ package com.videoplatform.service;
 
 import com.videoplatform.dto.CommentDTO;
 import com.videoplatform.dto.CreateCommentRequest;
-import com.videoplatform.exception.NotFoundException;
 import com.videoplatform.model.Comment;
 import com.videoplatform.model.User;
 import com.videoplatform.repository.CommentRepository;
 import com.videoplatform.repository.UserRepository;
 import com.videoplatform.repository.VideoRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.Principal;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class CommentService {
 
     private final CommentRepository commentRepository;
     private final UserRepository userRepository;
     private final VideoRepository videoRepository;
     private final NotificationService notificationService;
-
-    public CommentService(CommentRepository commentRepository,
-                          UserRepository userRepository,
-                          VideoRepository videoRepository,
-                          NotificationService notificationService) {
-        this.commentRepository = commentRepository;
-        this.userRepository = userRepository;
-        this.videoRepository = videoRepository;
-        this.notificationService = notificationService;
-    }
 
     @Transactional
     public CommentDTO addComment(CreateCommentRequest req, Principal principal) {
@@ -64,6 +54,17 @@ public class CommentService {
         return mapToDtoWithChildren(saved);
     }
 
+    private CommentDTO mapToDtoWithChildren(Comment comment) {
+        CommentDTO dto = mapToDto(comment);
+        List<CommentDTO> children = new ArrayList<>();
+
+        List<Comment> childComments = commentRepository.findByParentId(comment.getId());
+        for (Comment child : childComments) {
+            children.add(mapToDtoWithChildren(child));
+        }
+        dto.setChildren(children);
+        return dto;
+    }
     public List<CommentDTO> getCommentsTreeByVideoId(Long videoId) {
         List<Comment> comments = commentRepository.findByVideoId(videoId);
 
@@ -94,9 +95,14 @@ public class CommentService {
     private CommentDTO mapToDto(Comment comment) {
         CommentDTO dto = new CommentDTO();
         dto.setId(comment.getId());
-        dto.setText(comment.getText());
+        dto.setVideoId(comment.getVideo().getId());
+        dto.setParentId(comment.getParent() != null ? comment.getParent().getId() : null);
         dto.setAuthorUsername(comment.getAuthor().getUsername());
+        dto.setText(comment.getText());
         dto.setCreatedAt(comment.getCreatedAt());
+        dto.setUpdatedAt(comment.getUpdatedAt());
+        dto.setDeleted(comment.getDeleted());
         return dto;
     }
+
 }

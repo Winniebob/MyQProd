@@ -16,78 +16,32 @@ public class CommentDTO {
     private Boolean deleted;
     private List<CommentDTO> children = new ArrayList<>();
 
-    public CommentDTO() {
-    }
+    public CommentDTO() {}
 
-    public Long getId() {
-        return id;
-    }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    public Long getVideoId() { return videoId; }
+    public void setVideoId(Long videoId) { this.videoId = videoId; }
 
-    public Long getVideoId() {
-        return videoId;
-    }
+    public Long getParentId() { return parentId; }
+    public void setParentId(Long parentId) { this.parentId = parentId; }
 
-    public void setVideoId(Long videoId) {
-        this.videoId = videoId;
-    }
+    public String getAuthorUsername() { return authorUsername; }
+    public void setAuthorUsername(String authorUsername) { this.authorUsername = authorUsername; }
 
-    public Long getParentId() {
-        return parentId;
-    }
+    public String getText() { return text; }
+    public void setText(String text) { this.text = text; }
 
-    public void setParentId(Long parentId) {
-        this.parentId = parentId;
-    }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 
-    public String getAuthorUsername() {
-        return authorUsername;
-    }
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
 
-    public void setAuthorUsername(String authorUsername) {
-        this.authorUsername = authorUsername;
-    }
+    public Boolean getDeleted() { return deleted; }
+    public void setDeleted(Boolean deleted) { this.deleted = deleted; }
 
-    public String getText() {
-        return text;
-    }
-
-    public void setText(String text) {
-        this.text = text;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-    public Boolean getDeleted() {
-        return deleted;
-    }
-
-    public void setDeleted(Boolean deleted) {
-        this.deleted = deleted;
-    }
-
-    public List<CommentDTO> getChildren() {
-        return children;
-    }
-
-    public void setChildren(List<CommentDTO> children) {
-        this.children = children;
-    }
+    public List<CommentDTO> getChildren() { return children; }
+    public void setChildren(List<CommentDTO> children) { this.children = children; }
 }

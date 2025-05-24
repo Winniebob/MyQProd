@@ -5,6 +5,7 @@ import com.videoplatform.model.Notification;
 import com.videoplatform.model.User;
 import com.videoplatform.repository.NotificationRepository;
 import com.videoplatform.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.security.Principal;
@@ -13,16 +14,11 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class NotificationService {
 
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
-
-    public NotificationService(NotificationRepository notificationRepository,
-                               UserRepository userRepository) {
-        this.notificationRepository = notificationRepository;
-        this.userRepository = userRepository;
-    }
 
     public void createNotification(User recipient, String message) {
         Notification notification = new Notification();
@@ -33,23 +29,34 @@ public class NotificationService {
         notificationRepository.save(notification);
     }
 
-    public List<NotificationDTO> getNotifications(Principal principal, String type) {
+    public List<NotificationDTO> getNotifications(Principal principal, Notification.NotificationType type) {
         User user = userRepository.findByUsername(principal.getName())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        // Реализуй фильтрацию по типу уведомления, если есть поле type в Notification
-        List<Notification> notifications = notificationRepository.findByRecipientOrderByCreatedAtDesc(user);
+        List<Notification> notifications;
+
+        if (type != null) {
+            notifications = notificationRepository.findByRecipientAndTypeOrderByCreatedAtDesc(user, type);
+        } else {
+            notifications = notificationRepository.findByRecipientOrderByCreatedAtDesc(user);
+        }
 
         return notifications.stream()
                 .map(this::mapToDto)
                 .collect(Collectors.toList());
     }
 
-    public List<NotificationDTO> getUnreadNotifications(Principal principal, String type) {
+    public List<NotificationDTO> getUnreadNotifications(Principal principal, Notification.NotificationType type) {
         User user = userRepository.findByUsername(principal.getName())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        List<Notification> notifications = notificationRepository.findByRecipientAndReadFalse(user);
+        List<Notification> notifications;
+
+        if (type != null) {
+            notifications = notificationRepository.findByRecipientAndReadFalseAndType(user, type);
+        } else {
+            notifications = notificationRepository.findByRecipientAndReadFalse(user);
+        }
 
         return notifications.stream()
                 .map(this::mapToDto)
@@ -74,7 +81,6 @@ public class NotificationService {
         dto.setMessage(notification.getMessage());
         dto.setRead(notification.isRead());
         dto.setCreatedAt(notification.getCreatedAt());
-        // Добавь другие поля, если есть
         return dto;
     }
 }
