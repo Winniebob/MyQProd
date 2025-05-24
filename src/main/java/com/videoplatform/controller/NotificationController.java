@@ -3,6 +3,7 @@ package com.videoplatform.controller;
 import com.videoplatform.dto.NotificationDTO;
 import com.videoplatform.model.Notification;
 import com.videoplatform.model.User;
+import com.videoplatform.repository.UserRepository;
 import com.videoplatform.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +19,7 @@ import java.util.Map;
 public class NotificationController {
 
     private final NotificationService notificationService;
+    private final UserRepository userRepository;  // <-- добавь это
 
     @GetMapping
     public ResponseEntity<List<NotificationDTO>> getNotifications(
