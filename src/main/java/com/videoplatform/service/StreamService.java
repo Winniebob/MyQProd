@@ -94,4 +94,8 @@ public class StreamService {
     private String generateRecordingUrl(Stream stream) {
         return "/streams/recordings/" + stream.getId() + ".mp4";
     }
+    public Stream getStreamById(Long streamId) {
+        return streamRepository.findById(streamId)
+                .orElseThrow(() -> new NoSuchElementException("Stream not found"));
+    }
 }
