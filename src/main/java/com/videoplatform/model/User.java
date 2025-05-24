@@ -5,6 +5,7 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @Entity
 @Table(name = "users")
@@ -44,6 +45,7 @@ public class User {
 
     @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
+
     @ManyToMany
     @JoinTable(
             name = "user_followers",
@@ -58,6 +60,13 @@ public class User {
     @OneToMany(mappedBy = "user")
     private List<Video> videos;
 
+    // Добавленное поле для настроек уведомлений
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "user_notification_settings", joinColumns = @JoinColumn(name = "user_id"))
+    @MapKeyColumn(name = "notification_type")
+    @Column(name = "enabled")
+    private Map<String, Boolean> notificationSettings;
+
     @Transient
     private String password;
 
@@ -68,6 +77,4 @@ public class User {
     public void setPassword(String password) {
         this.password = password;
     }
-
-
 }

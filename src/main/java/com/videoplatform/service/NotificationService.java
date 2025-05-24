@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import java.security.Principal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -82,5 +83,32 @@ public class NotificationService {
         dto.setRead(notification.isRead());
         dto.setCreatedAt(notification.getCreatedAt());
         return dto;
+    }
+    public Map<String, Boolean> getUserNotificationSettings(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        return user.getNotificationSettings();
+    }
+
+    public void updateUserNotificationSettings(Long userId, Map<String, Boolean> settings) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        user.setNotificationSettings(settings);
+        userRepository.save(user);
+    }
+    public void createNotification(User recipient, Notification.NotificationType type, String message) {
+        Boolean enabled = recipient.getNotificationSettings() != null
+                ? recipient.getNotificationSettings().getOrDefault(type.name(), true)
+                : true;
+        if (!enabled) {
+            return;
+        }
+        Notification notification = new Notification();
+        notification.setRecipient(recipient);
+        notification.setType(type);
+        notification.setMessage(message);
+        notification.setRead(false);
+        notification.setCreatedAt(LocalDateTime.now());
+        notificationRepository.save(notification);
     }
 }
