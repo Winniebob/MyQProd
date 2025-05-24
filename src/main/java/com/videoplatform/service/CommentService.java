@@ -2,6 +2,7 @@ package com.videoplatform.service;
 
 import com.videoplatform.dto.CommentDTO;
 import com.videoplatform.dto.CreateCommentRequest;
+import com.videoplatform.exception.TooManyRequestsException;
 import com.videoplatform.model.Comment;
 import com.videoplatform.model.User;
 import com.videoplatform.model.Video;
@@ -13,6 +14,7 @@ import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 
 import java.security.Principal;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -50,6 +52,16 @@ public class CommentService {
         return mapToDtoWithChildren(saved);
     }
 
+    public Comment addComment(Comment comment) {
+        User author = comment.getAuthor(); // корректно!
+        LocalDateTime lastCommentTime = commentRepository.findLastCommentTimeByAuthor(author.getId());
+
+        if (lastCommentTime != null && Duration.between(lastCommentTime, LocalDateTime.now()).getSeconds() < 30) {
+            throw new TooManyRequestsException("Пожалуйста, подождите перед отправкой следующего комментария.");
+        }
+
+        return commentRepository.save(comment);
+    }
     public Page<CommentDTO> listRootComments(Long videoId, int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt"));
         Page<Comment> pageResult = commentRepository.findByVideoIdAndParentIsNull(videoId, pageable);
