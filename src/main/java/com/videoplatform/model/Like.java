@@ -3,11 +3,12 @@ package com.videoplatform.model;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 @Entity
-@Table(name = "likes", uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"user_id", "video_id"})
-})
-@Data
+@Table(name = "likes")
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -17,13 +18,19 @@ public class Like {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // пользователь, который лайкнул
-    @ManyToOne(optional = false)
+    // Кто поставил лайк
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    // видео, которое лайкнули
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "video_id", nullable = false)
-    private Video video;
+    // ID объекта (видео, комментария и т.п.)
+    @Column(name = "entity_id", nullable = false)
+    private Long entityId;
+
+    // Тип объекта, например "VIDEO", "COMMENT"
+    @Column(name = "entity_type", nullable = false)
+    private String entityType;
+
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt;
 }

@@ -1,61 +1,62 @@
 package com.videoplatform.service;
 
-import com.videoplatform.dto.LikeResponse;
+import com.videoplatform.dto.LikeDTO;
 import com.videoplatform.model.Like;
 import com.videoplatform.model.User;
-import com.videoplatform.model.Video;
 import com.videoplatform.repository.LikeRepository;
 import com.videoplatform.repository.UserRepository;
-import com.videoplatform.repository.VideoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.security.Principal;
+import java.time.LocalDateTime;
+import java.util.NoSuchElementException;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
 public class LikeService {
 
     private final LikeRepository likeRepository;
-    private final VideoRepository videoRepository;
     private final UserRepository userRepository;
 
-    /**
-     * Переключает лайк:
-     * - если уже лайк было — удаляет,
-     * - иначе — создаёт.
-     * Возвращает DTO с флагом (liked) и актуальным количеством лайков.
-     */
-    @Transactional
-    public LikeResponse toggleLike(Long videoId, Principal principal) {
-        // 1) Получаем текущего пользователя
+    public boolean addLike(Long entityId, String entityType, Principal principal) {
         User user = userRepository.findByUsername(principal.getName())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new NoSuchElementException("User not found"));
 
-        // 2) Ищем видео по ID
-        Video video = videoRepository.findById(videoId)
-                .orElseThrow(() -> new RuntimeException("Video not found"));
+        boolean alreadyLiked = likeRepository.existsByUserAndEntityIdAndEntityType(user, entityId, entityType);
+        if (alreadyLiked) return false;
 
-        // 3) Проверяем, поставлен ли уже лайк
-        boolean nowLiked;
-        if (likeRepository.findByUserAndVideo(user, video).isPresent()) {
-            // если есть — удаляем
-            likeRepository.deleteByUserAndVideo(user, video);
-            nowLiked = false;
-        } else {
-            // если нет — создаём новый лайк
-            Like like = Like.builder()
-                    .user(user)
-                    .video(video)
-                    .build();
-            likeRepository.save(like);
-            nowLiked = true;
+        Like like = Like.builder()
+                .user(user)
+                .entityId(entityId)
+                .entityType(entityType)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        likeRepository.save(like);
+        return true;
+    }
+
+    public boolean removeLike(Long entityId, String entityType, Principal principal) {
+        User user = userRepository.findByUsername(principal.getName())
+                .orElseThrow(() -> new NoSuchElementException("User not found"));
+
+        Optional<Like> likeOpt = likeRepository.findByUserAndEntityIdAndEntityType(user, entityId, entityType);
+        if (likeOpt.isPresent()) {
+            likeRepository.delete(likeOpt.get());
+            return true;
         }
+        return false;
+    }
 
-        // 4) Считаем общее число лайков у видео
-        int totalLikes = likeRepository.countByVideo(video);
+    public long countLikes(Long entityId, String entityType) {
+        return likeRepository.countByEntityIdAndEntityType(entityId, entityType);
+    }
 
-        return new LikeResponse(nowLiked, totalLikes);
+    public boolean hasUserLiked(Long entityId, String entityType, Principal principal) {
+        User user = userRepository.findByUsername(principal.getName())
+                .orElseThrow(() -> new NoSuchElementException("User not found"));
+        return likeRepository.existsByUserAndEntityIdAndEntityType(user, entityId, entityType);
     }
 }

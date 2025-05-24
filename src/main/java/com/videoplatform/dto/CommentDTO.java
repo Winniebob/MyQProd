@@ -15,7 +15,7 @@ public class CommentDTO {
     private LocalDateTime updatedAt;
     private Boolean deleted;
     private List<CommentDTO> children = new ArrayList<>();
-  
+
 
     public CommentDTO() {
     }
