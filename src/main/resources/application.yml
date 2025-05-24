@@ -36,3 +36,6 @@ stripe:
   api:
     key: 124124124
 
+app:
+  hls:
+    storage-path=/path/to/hls-storage: //указать путь
