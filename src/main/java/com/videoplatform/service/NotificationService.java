@@ -5,99 +5,76 @@ import com.videoplatform.model.Notification;
 import com.videoplatform.model.User;
 import com.videoplatform.repository.NotificationRepository;
 import com.videoplatform.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.security.Principal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class NotificationService {
 
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
-    private final SimpMessagingTemplate messagingTemplate;
 
-    /**
-     * Создает уведомление и пушит его по WebSocket в /topic/notifications/{username}
-     */
-    @Transactional
-    public NotificationDTO createNotification(
-            String username,
-            Notification.NotificationType type,    // <-- используем модельный enum
-            String message
-    ) {
-        User user = userRepository.findByUsername(username)
+    public NotificationService(NotificationRepository notificationRepository,
+                               UserRepository userRepository) {
+        this.notificationRepository = notificationRepository;
+        this.userRepository = userRepository;
+    }
+
+    public void createNotification(User recipient, String message) {
+        Notification notification = new Notification();
+        notification.setRecipient(recipient);
+        notification.setMessage(message);
+        notification.setRead(false);
+        notification.setCreatedAt(LocalDateTime.now());
+        notificationRepository.save(notification);
+    }
+
+    public List<NotificationDTO> getNotifications(Principal principal, String type) {
+        User user = userRepository.findByUsername(principal.getName())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        Notification n = Notification.builder()
-                .user(user)
-                .type(type)             // <-- поле уже есть в сущности
-                .message(message)       // <-- поле message в вашей сущности
-                .isRead(false)
-                .build();
+        // Реализуй фильтрацию по типу уведомления, если есть поле type в Notification
+        List<Notification> notifications = notificationRepository.findByRecipientOrderByCreatedAtDesc(user);
 
-        n = notificationRepository.save(n);
+        return notifications.stream()
+                .map(this::mapToDto)
+                .collect(Collectors.toList());
+    }
 
-        NotificationDTO dto = mapToDto(n);
-        // пушим в websocket
-        messagingTemplate.convertAndSend(
-                "/topic/notifications/" + username,
-                dto
-        );
+    public List<NotificationDTO> getUnreadNotifications(Principal principal, String type) {
+        User user = userRepository.findByUsername(principal.getName())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        List<Notification> notifications = notificationRepository.findByRecipientAndReadFalse(user);
+
+        return notifications.stream()
+                .map(this::mapToDto)
+                .collect(Collectors.toList());
+    }
+
+    public void markAsRead(Long id, Principal principal) {
+        Notification notification = notificationRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Notification not found"));
+
+        if (!notification.getRecipient().getUsername().equals(principal.getName())) {
+            throw new RuntimeException("No permission to mark this notification");
+        }
+
+        notification.setRead(true);
+        notificationRepository.save(notification);
+    }
+
+    private NotificationDTO mapToDto(Notification notification) {
+        NotificationDTO dto = new NotificationDTO();
+        dto.setId(notification.getId());
+        dto.setMessage(notification.getMessage());
+        dto.setRead(notification.isRead());
+        dto.setCreatedAt(notification.getCreatedAt());
+        // Добавь другие поля, если есть
         return dto;
-    }
-
-    public List<NotificationDTO> getNotifications(
-            Principal principal,
-            Notification.NotificationType type
-    ) {
-        User user = userRepository.findByUsername(principal.getName())
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        return (type == null
-                ? notificationRepository.findByUser(user)
-                : notificationRepository.findByUserAndType(user, type))
-                .stream()
-                .map(this::mapToDto)
-                .collect(Collectors.toList());
-    }
-
-    public List<NotificationDTO> getUnreadNotifications(
-            Principal principal,
-            Notification.NotificationType type
-    ) {
-        User user = userRepository.findByUsername(principal.getName())
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        return (type == null
-                ? notificationRepository.findByUserAndIsReadFalse(user)
-                : notificationRepository.findByUserAndTypeAndIsReadFalse(user, type))
-                .stream()
-                .map(this::mapToDto)
-                .collect(Collectors.toList());
-    }
-
-    public void markAsRead(Long notificationId, Principal principal) {
-        notificationRepository.findById(notificationId).ifPresent(notification -> {
-            if (notification.getUser().getUsername().equals(principal.getName())) {
-                notification.setIsRead(true);
-                notificationRepository.save(notification);
-            }
-        });
-    }
-
-    private NotificationDTO mapToDto(Notification n) {
-        return NotificationDTO.builder()
-                .id(n.getId())
-                .type(n.getType())
-                .message(n.getMessage())
-                .isRead(n.getIsRead())
-                .createdAt(n.getCreatedAt())
-                .build();
     }
 }

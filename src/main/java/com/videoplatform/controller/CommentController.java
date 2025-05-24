@@ -12,34 +12,22 @@ import java.security.Principal;
 import java.util.List;
 
 @RestController
-@RequestMapping("/comments")
-@RequiredArgsConstructor
+@RequestMapping("/api/comments")
 public class CommentController {
+
     private final CommentService commentService;
 
-    @PostMapping("/")
-    public ResponseEntity<CommentDTO> create(@RequestBody CreateCommentRequest req, Principal principal) {
-        return ResponseEntity.ok(commentService.addComment(req, principal));
+    public CommentController(CommentService commentService) {
+        this.commentService = commentService;
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id, Principal principal) {
-        commentService.deleteComment(id, principal);
-        return ResponseEntity.noContent().build();
+    @PostMapping
+    public CommentDTO addComment(@RequestBody CreateCommentRequest req, Principal principal) {
+        return commentService.addComment(req, principal);
     }
 
-    // Пагинация только корневых комментариев
     @GetMapping("/video/{videoId}")
-    public ResponseEntity<Page<CommentDTO>> listRoot(
-            @PathVariable Long videoId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        return ResponseEntity.ok(commentService.listRootComments(videoId, page, size));
-    }
-
-    // Всё дерево комментариев
-    @GetMapping("/video/{videoId}/tree")
-    public ResponseEntity<List<CommentDTO>> listTree(@PathVariable Long videoId) {
-        return ResponseEntity.ok(commentService.listCommentTree(videoId));
+    public List<CommentDTO> getCommentsByVideo(@PathVariable Long videoId) {
+        return commentService.getCommentsTreeByVideoId(videoId);
     }
 }

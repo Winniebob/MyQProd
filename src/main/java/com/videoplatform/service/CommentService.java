@@ -2,35 +2,43 @@ package com.videoplatform.service;
 
 import com.videoplatform.dto.CommentDTO;
 import com.videoplatform.dto.CreateCommentRequest;
-import com.videoplatform.exception.TooManyRequestsException;
+import com.videoplatform.exception.NotFoundException;
 import com.videoplatform.model.Comment;
 import com.videoplatform.model.User;
-import com.videoplatform.model.Video;
 import com.videoplatform.repository.CommentRepository;
 import com.videoplatform.repository.UserRepository;
 import com.videoplatform.repository.VideoRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.security.Principal;
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class CommentService {
+
     private final CommentRepository commentRepository;
     private final UserRepository userRepository;
     private final VideoRepository videoRepository;
+    private final NotificationService notificationService;
 
-    // Добавить комментарий
+    public CommentService(CommentRepository commentRepository,
+                          UserRepository userRepository,
+                          VideoRepository videoRepository,
+                          NotificationService notificationService) {
+        this.commentRepository = commentRepository;
+        this.userRepository = userRepository;
+        this.videoRepository = videoRepository;
+        this.notificationService = notificationService;
+    }
+
+    @Transactional
     public CommentDTO addComment(CreateCommentRequest req, Principal principal) {
         User author = userRepository.findByUsername(principal.getName())
                 .orElseThrow(() -> new NoSuchElementException("User not found"));
-        Video video = videoRepository.findById(req.getVideoId())
+        var video = videoRepository.findById(req.getVideoId())
                 .orElseThrow(() -> new NoSuchElementException("Video not found"));
 
         Comment parent = null;
@@ -45,58 +53,50 @@ public class CommentService {
                 .parent(parent)
                 .text(req.getText())
                 .createdAt(LocalDateTime.now())
-                .deleted(false)
                 .build();
 
         Comment saved = commentRepository.save(comment);
+
+        if (parent != null && !parent.getAuthor().equals(author)) {
+            notificationService.createNotification(parent.getAuthor(), "Ваш комментарий получил ответ.");
+        }
+
         return mapToDtoWithChildren(saved);
     }
 
-    public Comment addComment(Comment comment) {
-        User author = comment.getAuthor(); // корректно!
-        LocalDateTime lastCommentTime = commentRepository.findLastCommentTimeByAuthor(author.getId());
+    public List<CommentDTO> getCommentsTreeByVideoId(Long videoId) {
+        List<Comment> comments = commentRepository.findByVideoId(videoId);
 
-        if (lastCommentTime != null && Duration.between(lastCommentTime, LocalDateTime.now()).getSeconds() < 30) {
-            throw new TooManyRequestsException("Пожалуйста, подождите перед отправкой следующего комментария.");
+        Map<Long, CommentDTO> dtoMap = new HashMap<>();
+        List<CommentDTO> roots = new ArrayList<>();
+
+        for (Comment c : comments) {
+            CommentDTO dto = mapToDto(c);
+            dto.setChildren(new ArrayList<>());
+            dtoMap.put(c.getId(), dto);
         }
 
-        return commentRepository.save(comment);
-    }
-    public Page<CommentDTO> listRootComments(Long videoId, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt"));
-        Page<Comment> pageResult = commentRepository.findByVideoIdAndParentIsNull(videoId, pageable);
-        return pageResult.map(this::mapToDtoWithChildren);
-    }
+        for (Comment c : comments) {
+            CommentDTO dto = dtoMap.get(c.getId());
+            if (c.getParent() != null) {
+                CommentDTO parentDto = dtoMap.get(c.getParent().getId());
+                if (parentDto != null) {
+                    parentDto.getChildren().add(dto);
+                }
+            } else {
+                roots.add(dto);
+            }
+        }
 
-    public List<CommentDTO> listCommentTree(Long videoId) {
-        List<Comment> roots = commentRepository.findByVideoIdAndParentIsNull(videoId, Sort.by(Sort.Direction.ASC, "createdAt"));
-        return roots.stream()
-                .map(this::mapToDtoWithChildren)
-                .collect(Collectors.toList());
-    }
-
-    public void deleteComment(Long id, Principal principal) {
-        Comment comment = commentRepository.findById(id)
-                .orElseThrow(() -> new NoSuchElementException("Comment not found"));
-        comment.setDeleted(true);
-        commentRepository.save(comment);
+        return roots;
     }
 
-    private CommentDTO mapToDtoWithChildren(Comment comment) {
-        List<CommentDTO> children = commentRepository.findByParentId(comment.getId(), Sort.by("createdAt")).stream()
-                .map(this::mapToDtoWithChildren)
-                .collect(Collectors.toList());
-
-        return CommentDTO.builder()
-                .id(comment.getId())
-                .videoId(comment.getVideo().getId())
-                .parentId(comment.getParent() != null ? comment.getParent().getId() : null)
-                .authorUsername(comment.getAuthor().getUsername())
-                .text(comment.getText())
-                .createdAt(comment.getCreatedAt())
-                .updatedAt(comment.getUpdatedAt())
-                .deleted(comment.getDeleted())
-                .children(children)
-                .build();
+    private CommentDTO mapToDto(Comment comment) {
+        CommentDTO dto = new CommentDTO();
+        dto.setId(comment.getId());
+        dto.setText(comment.getText());
+        dto.setAuthorUsername(comment.getAuthor().getUsername());
+        dto.setCreatedAt(comment.getCreatedAt());
+        return dto;
     }
 }
