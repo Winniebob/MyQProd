@@ -1,8 +1,7 @@
 package com.videoplatform.controller;
 
-import com.videoplatform.dto.StreamDTO;
+import com.videoplatform.model.Stream;
 import com.videoplatform.service.StreamService;
-import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,31 +16,42 @@ public class StreamController {
 
     private final StreamService streamService;
 
-    @PostMapping
-    public ResponseEntity<StreamDTO> create(@RequestParam @NotBlank String title,
-                                            Principal principal) {
-        return ResponseEntity.ok(streamService.createStream(title, principal));
+    @PostMapping("/create")
+    public ResponseEntity<Stream> createStream(@RequestParam String title,
+                                               @RequestParam(required = false) String description,
+                                               Principal principal) {
+        Stream stream = streamService.createStream(title, description, principal);
+        return ResponseEntity.ok(stream);
     }
 
     @PostMapping("/{id}/start")
-    public ResponseEntity<StreamDTO> start(@PathVariable Long id,
-                                           Principal principal) {
-        return ResponseEntity.ok(streamService.startStream(id, principal));
+    public ResponseEntity<Stream> startStream(@PathVariable Long id, Principal principal) {
+        Stream stream = streamService.startStream(id, principal);
+        return ResponseEntity.ok(stream);
     }
 
     @PostMapping("/{id}/stop")
-    public ResponseEntity<StreamDTO> stop(@PathVariable Long id,
-                                          Principal principal) {
-        return ResponseEntity.ok(streamService.stopStream(id, principal));
+    public ResponseEntity<Stream> stopStream(@PathVariable Long id, Principal principal) {
+        Stream stream = streamService.stopStream(id, principal);
+        return ResponseEntity.ok(stream);
     }
 
-    @GetMapping("/active")
-    public ResponseEntity<List<StreamDTO>> active() {
-        return ResponseEntity.ok(streamService.getActiveStreams());
+    @GetMapping("/my")
+    public ResponseEntity<List<Stream>> getUserStreams(Principal principal) {
+        List<Stream> streams = streamService.getUserStreams(principal);
+        return ResponseEntity.ok(streams);
     }
 
-    @GetMapping
-    public ResponseEntity<List<StreamDTO>> all() {
-        return ResponseEntity.ok(streamService.getAllStreams());
+    @GetMapping("/live")
+    public ResponseEntity<List<Stream>> getLiveStreams() {
+        List<Stream> streams = streamService.getLiveStreams();
+        return ResponseEntity.ok(streams);
+    }
+
+    @GetMapping("/key/{streamKey}")
+    public ResponseEntity<Stream> getStreamByKey(@PathVariable String streamKey) {
+        return streamService.getStreamByKey(streamKey)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 }

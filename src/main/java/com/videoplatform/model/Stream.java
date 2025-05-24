@@ -7,7 +7,8 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "streams")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -17,21 +18,38 @@ public class Stream {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "user_id")
+    // Пользователь — владелец стрима
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    @Column(nullable = false)
     private String title;
 
-    @Column(name = "stream_key", unique = true, nullable = false)
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
+    @Column(unique = true)
     private String streamKey;
 
     @Column(name = "is_live")
-    private Boolean isLive = false;
+    private boolean isLive;
 
-    @Column(name = "started_at")
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private StreamStatus status;
+
     private LocalDateTime startedAt;
 
-    @Column(name = "ended_at")
-    private LocalDateTime endedAt;
+    private LocalDateTime stoppedAt;
+
+    private String streamUrl;
+
+    private String recordingUrl;
+
+    public enum StreamStatus {
+        CREATED,
+        LIVE,
+        STOPPED
+    }
 }
