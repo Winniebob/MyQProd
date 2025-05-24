@@ -38,11 +38,10 @@ public class DonationService {
         donation = donationRepository.save(donation);
 
         // Создаем уведомление о донате
-        Notification notification = Notification.builder()
-                .user(toUser)
-                .message(String.format("Пользователь %s отправил вам донат %s", fromUser.getUsername(), amount.toString()))
-                .isRead(false)
-                .build();
+        Notification notification = new Notification();
+        notification.setRecipient(toUser);
+        notification.setMessage(String.format("Пользователь %s сделал донат %s", fromUser.getUsername(), amount.toString()));
+        notification.setRead(false);
         notificationRepository.save(notification);
 
         return mapToDto(donation);
