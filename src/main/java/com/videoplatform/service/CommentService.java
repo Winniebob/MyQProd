@@ -43,6 +43,7 @@ public class CommentService {
                 .parent(parent)
                 .text(req.getText())
                 .createdAt(LocalDateTime.now())
+                .deleted(false)
                 .build();
 
         Comment saved = commentRepository.save(comment);
@@ -54,19 +55,8 @@ public class CommentService {
         return mapToDtoWithChildren(saved);
     }
 
-    private CommentDTO mapToDtoWithChildren(Comment comment) {
-        CommentDTO dto = mapToDto(comment);
-        List<CommentDTO> children = new ArrayList<>();
-
-        List<Comment> childComments = commentRepository.findByParentId(comment.getId());
-        for (Comment child : childComments) {
-            children.add(mapToDtoWithChildren(child));
-        }
-        dto.setChildren(children);
-        return dto;
-    }
     public List<CommentDTO> getCommentsTreeByVideoId(Long videoId) {
-        List<Comment> comments = commentRepository.findByVideoId(videoId);
+        List<Comment> comments = commentRepository.findByVideoIdAndDeletedFalse(videoId);
 
         Map<Long, CommentDTO> dtoMap = new HashMap<>();
         List<CommentDTO> roots = new ArrayList<>();
@@ -92,6 +82,19 @@ public class CommentService {
         return roots;
     }
 
+    @Transactional
+    public void softDeleteComment(Long commentId, String username) {
+        Comment comment = commentRepository.findByIdAndDeletedFalse(commentId)
+                .orElseThrow(() -> new NoSuchElementException("Комментарий не найден"));
+
+        if (!comment.getAuthor().getUsername().equals(username)) {
+            throw new SecurityException("Недостаточно прав для удаления комментария");
+        }
+
+        comment.setDeleted(true);
+        commentRepository.save(comment);
+    }
+
     private CommentDTO mapToDto(Comment comment) {
         CommentDTO dto = new CommentDTO();
         dto.setId(comment.getId());
@@ -105,4 +108,16 @@ public class CommentService {
         return dto;
     }
 
+    private CommentDTO mapToDtoWithChildren(Comment comment) {
+        CommentDTO dto = mapToDto(comment);
+        List<CommentDTO> children = new ArrayList<>();
+
+        List<Comment> childComments = commentRepository.findByParentId(comment.getId());
+        for (Comment child : childComments) {
+            if (Boolean.TRUE.equals(child.getDeleted())) continue;
+            children.add(mapToDtoWithChildren(child));
+        }
+        dto.setChildren(children);
+        return dto;
+    }
 }
