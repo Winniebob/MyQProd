@@ -12,12 +12,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.Principal;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
 @RequiredArgsConstructor
 public class CommentService {
+
+    private static final long COMMENT_COOLDOWN_SECONDS = 30;
 
     private final CommentRepository commentRepository;
     private final UserRepository userRepository;
@@ -28,6 +31,16 @@ public class CommentService {
     public CommentDTO addComment(CreateCommentRequest req, Principal principal) {
         User author = userRepository.findByUsername(principal.getName())
                 .orElseThrow(() -> new NoSuchElementException("User not found"));
+
+        // Проверяем время последнего комментария пользователя
+        Comment lastComment = commentRepository.findTopByAuthorOrderByCreatedAtDesc(author);
+        if (lastComment != null) {
+            Duration duration = Duration.between(lastComment.getCreatedAt(), LocalDateTime.now());
+            if (duration.getSeconds() < COMMENT_COOLDOWN_SECONDS) {
+                throw new RuntimeException("Вы комментируете слишком часто. Подождите немного.");
+            }
+        }
+
         var video = videoRepository.findById(req.getVideoId())
                 .orElseThrow(() -> new NoSuchElementException("Video not found"));
 
@@ -119,5 +132,20 @@ public class CommentService {
         }
         dto.setChildren(children);
         return dto;
+    }
+    @Transactional
+    public CommentDTO updateComment(Long commentId, String newText, String username) {
+        Comment comment = commentRepository.findByIdAndDeletedFalse(commentId)
+                .orElseThrow(() -> new NoSuchElementException("Комментарий не найден"));
+
+        if (!comment.getAuthor().getUsername().equals(username)) {
+            throw new SecurityException("Недостаточно прав для редактирования комментария");
+        }
+
+        comment.setText(newText);
+        comment.setUpdatedAt(LocalDateTime.now());
+        Comment updated = commentRepository.save(comment);
+
+        return mapToDto(updated);
     }
 }

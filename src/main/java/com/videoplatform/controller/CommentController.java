@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/comments")
@@ -31,5 +32,12 @@ public class CommentController {
     public ResponseEntity<?> deleteComment(@PathVariable Long commentId, Principal principal) {
         commentService.softDeleteComment(commentId, principal.getName());
         return ResponseEntity.ok().build();
+    }
+    @PutMapping("/{commentId}")
+    public CommentDTO updateComment(@PathVariable Long commentId,
+                                    @RequestBody Map<String, String> body,
+                                    Principal principal) {
+        String newText = body.get("text");
+        return commentService.updateComment(commentId, newText, principal.getName());
     }
 }
