@@ -51,9 +51,17 @@ public class Notification {
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    @Column(name = "stream_id")
+    private Long streamId;
+
+    public Long getStreamId() { return streamId; }
+    public void setStreamId(Long streamId) { this.streamId = streamId; }
+
     public enum NotificationType {
         NEW_COMMENT,
         NEW_LIKE,
-        NEW_SUBSCRIPTION
+        NEW_SUBSCRIPTION,
+        STREAM_STARTED,
+        STREAM_ENDED,
     }
 }

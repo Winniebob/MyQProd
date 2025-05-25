@@ -54,4 +54,20 @@ public class StreamController {
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
+    @PostMapping("/group")
+    public Stream createGroupStream(
+            @RequestParam String title,
+            @RequestParam String description,
+            @RequestParam List<Long> participantIds,
+            @RequestParam boolean isPublic,
+            @RequestParam(required = false) String groupName,
+            Principal principal
+    ) {
+        return streamService.createGroupStream(title, description, participantIds, isPublic, groupName, principal);
+    }
+
+    @PostMapping("/group/{id}/start")
+    public Stream startGroupStream(@PathVariable Long id, Principal principal) {
+        return streamService.startGroupStream(id, principal);
+    }
 }
