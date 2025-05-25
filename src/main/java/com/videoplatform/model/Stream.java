@@ -21,6 +21,14 @@ public class Stream {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    @ManyToMany
+    @JoinTable(
+            name = "stream_participants",
+            joinColumns = @JoinColumn(name = "stream_id"),
+            inverseJoinColumns = @JoinColumn(name = "user_id")
+    )
+    private java.util.List<User> participants;
+
     @Column(nullable = false)
     private String title;
 
@@ -35,9 +43,11 @@ public class Stream {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private StreamStatus status;
-
+    @Column(name = "group_name")
+    private String groupName;
     @Column(name = "is_live")
     private Boolean isLive;
+    private boolean isPublic;
 
     private LocalDateTime startedAt;
 
@@ -46,7 +56,7 @@ public class Stream {
     private String streamUrl;
 
     private String recordingUrl;
-
+//
     public enum StreamStatus {
         CREATED, LIVE, STOPPED
     }
