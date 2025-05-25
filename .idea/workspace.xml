@@ -5,10 +5,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="6b0830dd-87ae-4e3a-bd51-bf949912ca92" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/videoplatform/service/WebRtcService.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/videoplatform/controller/WebRtcSignalingController.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/videoplatform/dto/SignalMessage.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/compiler.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/compiler.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/videoplatform/service/HlsStorageService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/videoplatform/service/HlsStorageService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/videoplatform/service/StreamService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/videoplatform/service/StreamService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/videoplatform/controller/HlsStreamController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/videoplatform/controller/HlsStreamController.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -53,10 +55,25 @@
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "WebServerToolWindowFactoryState": "false",
     "last_opened_file_path": "C:/Users/vilks/OneDrive/Рабочий стол/tooti footi/раз/VideoStreamingPlatform",
-    "run.code.analysis.last.selected.profile": "pProject Default"
+    "run.code.analysis.last.selected.profile": "pProject Default",
+    "spring.configuration.checksum": "1e967eba80f178ae016bbfcd4d658052"
   }
 }]]></component>
-  <component name="RunManager">
+  <component name="RunDashboard">
+    <option name="configurationTypes">
+      <set>
+        <option value="SpringBootApplicationConfigurationType" />
+      </set>
+    </option>
+  </component>
+  <component name="RunManager" selected="Spring Boot.VideoStreamingPlatformApplication">
+    <configuration name="VideoStreamingPlatformApplication (1)" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot">
+      <module name="VideoStreamingPlatform" />
+      <option name="SPRING_BOOT_MAIN_CLASS" value="com.videoplatform.VideoStreamingPlatformApplication" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
     <configuration name="VideoStreamingPlatformApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot">
       <module name="demo" />
       <option name="SPRING_BOOT_MAIN_CLASS" value="com.videoplatform.VideoStreamingPlatformApplication" />
@@ -74,6 +91,7 @@
       <option name="presentableId" value="Default" />
       <updated>1747984140204</updated>
       <workItem from="1747984141958" duration="11355000" />
+      <workItem from="1748198531583" duration="908000" />
     </task>
     <task id="LOCAL-00001" summary="2">
       <created>1747988632494</created>
@@ -201,7 +219,14 @@
       <option name="project" value="LOCAL" />
       <updated>1748127280329</updated>
     </task>
-    <option name="localTasksCounter" value="19" />
+    <task id="LOCAL-00019" summary="14">
+      <created>1748131482211</created>
+      <option name="number" value="00019" />
+      <option name="presentableId" value="LOCAL-00019" />
+      <option name="project" value="LOCAL" />
+      <updated>1748131482211</updated>
+    </task>
+    <option name="localTasksCounter" value="20" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -229,6 +254,7 @@
     <MESSAGE value="11" />
     <MESSAGE value="12" />
     <MESSAGE value="13" />
-    <option name="LAST_COMMIT_MESSAGE" value="13" />
+    <MESSAGE value="14" />
+    <option name="LAST_COMMIT_MESSAGE" value="14" />
   </component>
 </project>
