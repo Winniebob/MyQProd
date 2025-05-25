@@ -35,7 +35,7 @@ public class NotificationService {
             notification.setMessage(message);
             notification.setRead(false);
             notification.setCreatedAt(LocalDateTime.now());
-            notification.setStreamId(streamId);
+            notification.setStreamId(streamId); // поле streamId должно быть в Notification.java
             notificationRepository.save(notification);
         }
     }
@@ -120,4 +120,5 @@ public class NotificationService {
         notification.setCreatedAt(LocalDateTime.now());
         notificationRepository.save(notification);
     }
+
 }
