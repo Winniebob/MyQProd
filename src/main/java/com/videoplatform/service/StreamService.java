@@ -1,5 +1,6 @@
 package com.videoplatform.service;
 
+import com.videoplatform.model.Notification;
 import com.videoplatform.model.Stream;
 import com.videoplatform.model.User;
 import com.videoplatform.repository.StreamRepository;
@@ -101,5 +102,63 @@ public class StreamService {
 
     private String generateRecordingUrl(Stream stream) {
         return "/streams/recordings/" + stream.getId() + ".mp4";
+    }
+    public Stream createGroupStream(String title, String description, List<Long> participantIds, boolean isPublic, String groupName, Principal principal) {
+        User creator = userRepository.findByUsername(principal.getName())
+                .orElseThrow(() -> new NoSuchElementException("User not found"));
+
+        List<User> participants = userRepository.findAllById(participantIds);
+
+        Stream stream = Stream.builder()
+                .user(creator)
+                .participants(participants)
+                .title(title)
+                .description(description)
+                .groupName(groupName)
+                .streamKey(generateStreamKey())
+                .status(Stream.StreamStatus.CREATED)
+                .isLive(false)
+                .isPublic(isPublic)
+                .build();
+
+        return streamRepository.save(stream);
+    }
+    public Stream startGroupStream(Long streamId, Principal principal) {
+        Stream stream = getStreamById(streamId);
+        User user = userRepository.findByUsername(principal.getName())
+                .orElseThrow(() -> new NoSuchElementException("User not found"));
+
+        if (!stream.getUser().equals(user) && (stream.getParticipants() == null || !stream.getParticipants().contains(user))) {
+            throw new SecurityException("Нет доступа к этому групповому стриму");
+        }
+
+        stream.setStatus(Stream.StreamStatus.LIVE);
+        stream.setIsLive(true);
+        stream.setStartedAt(LocalDateTime.now());
+        stream.setStreamUrl(generateStreamUrl(stream));
+        Stream result = streamRepository.save(stream);
+
+        // Уведомить участников
+        if (stream.getParticipants() != null) {
+            for (User participant : stream.getParticipants()) {
+                if (!participant.getId().equals(user.getId())) {
+                    notificationService.createNotification(participant, Notification.NotificationType.STREAM_STARTED,
+                            "Групповой стрим '" + stream.getTitle() + "' запущен.");
+                }
+            }
+        }
+
+        // Если публичный — уведомить подписчиков всех участников
+        if (stream.isPublic() && stream.getParticipants() != null) {
+            for (User participant : stream.getParticipants()) {
+                List<User> followers = userRepository.findFollowersByUserId(participant.getId());
+                for (User follower : followers) {
+                    notificationService.createNotification(follower, Notification.NotificationType.STREAM_STARTED,
+                            "Публичный групповой стрим '" + stream.getTitle() + "' начался!");
+                }
+            }
+        }
+
+        return result;
     }
 }
