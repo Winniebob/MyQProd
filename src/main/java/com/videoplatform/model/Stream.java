@@ -2,7 +2,6 @@ package com.videoplatform.model;
 
 import jakarta.persistence.*;
 import lombok.*;
-
 import java.time.LocalDateTime;
 
 @Entity
@@ -18,8 +17,7 @@ public class Stream {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Пользователь — владелец стрима
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
@@ -29,15 +27,17 @@ public class Stream {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(unique = true)
+    @Column(nullable = false, unique = true)
     private String streamKey;
 
-    @Column(name = "is_live")
-    private boolean isLive;
+    private String webrtcSessionId;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private StreamStatus status;
+
+    @Column(name = "is_live")
+    private Boolean isLive;
 
     private LocalDateTime startedAt;
 
@@ -48,8 +48,6 @@ public class Stream {
     private String recordingUrl;
 
     public enum StreamStatus {
-        CREATED,
-        LIVE,
-        STOPPED
+        CREATED, LIVE, STOPPED
     }
 }

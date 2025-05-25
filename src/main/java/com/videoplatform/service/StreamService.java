@@ -11,7 +11,6 @@ import java.security.Principal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -20,6 +19,7 @@ public class StreamService {
 
     private final StreamRepository streamRepository;
     private final UserRepository userRepository;
+    private final WebRtcService webRtcService;
 
     public Stream createStream(String title, String description, Principal principal) {
         User user = userRepository.findByUsername(principal.getName())
@@ -29,8 +29,8 @@ public class StreamService {
                 .user(user)
                 .title(title)
                 .description(description)
-                .status(Stream.StreamStatus.CREATED)
                 .streamKey(generateStreamKey())
+                .status(Stream.StreamStatus.CREATED)
                 .isLive(false)
                 .build();
 
@@ -38,15 +38,16 @@ public class StreamService {
     }
 
     public Stream startStream(Long streamId, Principal principal) {
-        Stream stream = streamRepository.findById(streamId)
-                .orElseThrow(() -> new NoSuchElementException("Stream not found"));
+        Stream stream = getStreamById(streamId);
+        User user = userRepository.findByUsername(principal.getName())
+                .orElseThrow(() -> new NoSuchElementException("User not found"));
 
-        if (!stream.getUser().getUsername().equals(principal.getName())) {
+        if (!stream.getUser().equals(user)) {
             throw new SecurityException("No permission to start this stream");
         }
 
         stream.setStatus(Stream.StreamStatus.LIVE);
-        stream.setLive(true);
+        stream.setIsLive(true);
         stream.setStartedAt(LocalDateTime.now());
         stream.setStreamUrl(generateStreamUrl(stream));
 
@@ -54,15 +55,16 @@ public class StreamService {
     }
 
     public Stream stopStream(Long streamId, Principal principal) {
-        Stream stream = streamRepository.findById(streamId)
-                .orElseThrow(() -> new NoSuchElementException("Stream not found"));
+        Stream stream = getStreamById(streamId);
+        User user = userRepository.findByUsername(principal.getName())
+                .orElseThrow(() -> new NoSuchElementException("User not found"));
 
-        if (!stream.getUser().getUsername().equals(principal.getName())) {
+        if (!stream.getUser().equals(user)) {
             throw new SecurityException("No permission to stop this stream");
         }
 
         stream.setStatus(Stream.StreamStatus.STOPPED);
-        stream.setLive(false);
+        stream.setIsLive(false);
         stream.setStoppedAt(LocalDateTime.now());
         stream.setRecordingUrl(generateRecordingUrl(stream));
 
@@ -79,8 +81,14 @@ public class StreamService {
         return streamRepository.findByIsLiveTrue();
     }
 
-    public Optional<Stream> getStreamByKey(String streamKey) {
-        return streamRepository.findByStreamKey(streamKey);
+    public Stream getStreamById(Long id) {
+        return streamRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("Stream not found"));
+    }
+
+    public Stream getStreamByKey(String streamKey) {
+        return streamRepository.findByStreamKey(streamKey)
+                .orElseThrow(() -> new NoSuchElementException("Stream not found"));
     }
 
     private String generateStreamKey() {
@@ -93,9 +101,5 @@ public class StreamService {
 
     private String generateRecordingUrl(Stream stream) {
         return "/streams/recordings/" + stream.getId() + ".mp4";
-    }
-    public Stream getStreamById(Long streamId) {
-        return streamRepository.findById(streamId)
-                .orElseThrow(() -> new NoSuchElementException("Stream not found"));
     }
 }
