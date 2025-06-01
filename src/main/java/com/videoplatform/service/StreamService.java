@@ -21,9 +21,11 @@ public class StreamService {
 
     private final StreamRepository streamRepository;
     private final UserRepository userRepository;
-    private final WebRtcService webRtcService;
     private final NotificationService notificationService;
 
+    /**
+     * Создаёт черновой одиночный стрим.
+     */
     public Stream createStream(String title, String description, Principal principal) {
         User user = userRepository.findByUsername(principal.getName())
                 .orElseThrow(() -> new NoSuchElementException("User not found"));
@@ -35,11 +37,16 @@ public class StreamService {
                 .streamKey(generateStreamKey())
                 .status(Stream.StreamStatus.CREATED)
                 .isLive(false)
+                .isPublic(false)
                 .build();
 
         return streamRepository.save(stream);
     }
 
+    /**
+     * Запускает одиночный стрим: меняет статус, помечает isLive, сохраняет startedAt и streamUrl,
+     * рассылает уведомления подписчикам.
+     */
     public Stream startStream(Long streamId, Principal principal) {
         Stream stream = getStreamById(streamId);
         User user = userRepository.findByUsername(principal.getName())
@@ -52,11 +59,10 @@ public class StreamService {
         stream.setStatus(Stream.StreamStatus.LIVE);
         stream.setIsLive(true);
         stream.setStartedAt(LocalDateTime.now());
-        stream.setStreamUrl(generateStreamUrl(stream));
+        stream.setStreamUrl("/streams/live/" + stream.getId() + "/index.m3u8");
 
         Stream saved = streamRepository.save(stream);
 
-        // Уведомляем подписчиков автора о старте одиночного стрима
         List<User> followers = stream.getUser().getFollowers();
         if (followers != null && !followers.isEmpty()) {
             notificationService.notifyUsers(
@@ -70,6 +76,10 @@ public class StreamService {
         return saved;
     }
 
+    /**
+     * Останавливает одиночный стрим: меняет статус, снимает isLive, сохраняет stoppedAt и recordingUrl,
+     * рассылает уведомления подписчикам.
+     */
     public Stream stopStream(Long streamId, Principal principal) {
         Stream stream = getStreamById(streamId);
         User user = userRepository.findByUsername(principal.getName())
@@ -82,11 +92,10 @@ public class StreamService {
         stream.setStatus(Stream.StreamStatus.STOPPED);
         stream.setIsLive(false);
         stream.setStoppedAt(LocalDateTime.now());
-        stream.setRecordingUrl(generateRecordingUrl(stream));
+        stream.setRecordingUrl("/streams/recordings/" + stream.getId() + ".mp4");
 
         Stream saved = streamRepository.save(stream);
 
-        // Уведомляем подписчиков автора о завершении одиночного стрима
         List<User> followers = stream.getUser().getFollowers();
         if (followers != null && !followers.isEmpty()) {
             notificationService.notifyUsers(
@@ -100,38 +109,44 @@ public class StreamService {
         return saved;
     }
 
+    /**
+     * Возвращает все стримы пользователя.
+     */
     public List<Stream> getUserStreams(Principal principal) {
         User user = userRepository.findByUsername(principal.getName())
                 .orElseThrow(() -> new NoSuchElementException("User not found"));
         return streamRepository.findByUser(user);
     }
 
+    /**
+     * Возвращает все активные (LIVE) стримы.
+     */
     public List<Stream> getLiveStreams() {
         return streamRepository.findByIsLiveTrue();
     }
 
+    /**
+     * Возвращает стрим по его ID.
+     */
     public Stream getStreamById(Long id) {
         return streamRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("Stream not found"));
     }
 
-    public Stream getStreamByKey(String streamKey) {
-        return streamRepository.findByStreamKey(streamKey)
-                .orElseThrow(() -> new NoSuchElementException("Stream not found"));
+    /**
+     * Сохраняет стрим (например, чтобы записать webrtcSessionId).
+     */
+    public Stream save(Stream stream) {
+        return streamRepository.save(stream);
     }
 
     private String generateStreamKey() {
         return UUID.randomUUID().toString();
     }
 
-    private String generateStreamUrl(Stream stream) {
-        return "/streams/live/" + stream.getId() + "/index.m3u8";
-    }
-
-    private String generateRecordingUrl(Stream stream) {
-        return "/streams/recordings/" + stream.getId() + ".mp4";
-    }
-
+    /**
+     * Создаёт черновой групповой стрим.
+     */
     public Stream createGroupStream(String title,
                                     String description,
                                     List<Long> participantIds,
@@ -158,6 +173,10 @@ public class StreamService {
         return streamRepository.save(stream);
     }
 
+    /**
+     * Запускает групповой стрим: ставит LIVE, сохраняет startedAt и streamUrl,
+     * рассылает уведомления участникам и их подписчикам.
+     */
     public Stream startGroupStream(Long streamId, Principal principal) {
         Stream stream = getStreamById(streamId);
         User user = userRepository.findByUsername(principal.getName())
@@ -171,12 +190,11 @@ public class StreamService {
         stream.setStatus(Stream.StreamStatus.LIVE);
         stream.setIsLive(true);
         stream.setStartedAt(LocalDateTime.now());
-        stream.setStreamUrl(generateStreamUrl(stream));
+        stream.setStreamUrl("/streams/live/" + stream.getId() + "/index.m3u8");
         Stream result = streamRepository.save(stream);
 
         Long sId = result.getId();
 
-        // 1) Уведомляем участников (кроме того, кто запустил)
         if (stream.getParticipants() != null) {
             for (User participant : stream.getParticipants()) {
                 if (!participant.getId().equals(user.getId())) {
@@ -190,7 +208,6 @@ public class StreamService {
             }
         }
 
-        // 2) Если публичный — уведомляем фолловеров всех участников (без дубликатов)
         if (stream.isPublic() && stream.getParticipants() != null) {
             Set<User> allFollowers = new HashSet<>();
             for (User participant : stream.getParticipants()) {
@@ -199,7 +216,6 @@ public class StreamService {
                     allFollowers.addAll(followers);
                 }
             }
-            // Убираем автора стрима, если он в подписчиках
             allFollowers.remove(user);
             for (User follower : allFollowers) {
                 notificationService.createNotification(

@@ -29,6 +29,7 @@ public class SubscriptionService {
     private final UserRepository userRepository;
     private final NotificationService notificationService;
 
+
     /**
      * Создаёт платную подписку через Stripe и сохраняет локально.
      *
@@ -183,5 +184,18 @@ public class SubscriptionService {
                         .endDate(entity.getEndDate())
                         .build())
                 .toList();
+    }
+    /**
+     * Проверяет, имеет ли пользователь (username) активную подписку на channelId.
+     */
+    public boolean userIsSubscribed(String username, Long channelId) {
+        User subscriber = userRepository.findByUsername(username)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        User channel = userRepository.findById(channelId)
+                .orElseThrow(() -> new IllegalArgumentException("Channel not found"));
+
+        return subscriptionRepository.findBySubscriberAndChannel(subscriber, channel)
+                .filter(sub -> sub.getStatus() == SubscriptionStatus.ACTIVE)
+                .isPresent();
     }
 }

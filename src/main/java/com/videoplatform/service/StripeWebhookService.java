@@ -23,18 +23,16 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 
-/**
- * Сервис для обработки Stripe Webhook-событий, связанных с подписками.
- *
- * Изменения по сравнению с исходным кодом:
- * 1) Используем event.getDataObjectDeserializer().getObject().getRawJson() для извлечения "сырых" полей
- *    current_period_start и current_period_end вместо вызова несуществующих методов getCurrentPeriodStart()/getData().
- * 2) Корректно приводим типы, проверяем наличие полей.
- * 3) В onCreated() теперь не предполагаем, что канал равен самому пользователю:
- *    оставляем заполнение канала в соответствии с бизнес-логикой (например, через metadata subscription’а).
- *    Если в вашей системе канал = пользователь, оставляем как было.
- * 4) Обрабатываем возможное отсутствие полей в JSON, чтобы не падать при неожиданном формате.
- */
+// ========================================================================
+// TODO:
+//   1) В application.yml или application.properties указать реальный секрет вебхука:
+//        stripe.webhook.secret=ваш_секрет_из_Dashboard
+//   2) В контроллере (например, StripeWebhookController) пробросить payload и sigHeader сюда:
+//        stripeWebhookService.handleWebhook(payload, sigHeader);
+//   3) Зарегистрировать в Stripe Dashboard URL: https://<ваш-домен>/api/stripe-webhook
+//   4) Убедиться, что слушаются именно те event’ы, которые нужны (customer.subscription.created/updated/deleted).
+// ========================================================================
+
 @Service
 @RequiredArgsConstructor
 public class StripeWebhookService {

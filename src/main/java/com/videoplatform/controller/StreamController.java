@@ -1,6 +1,7 @@
 package com.videoplatform.controller;
 
 import com.videoplatform.model.Stream;
+import com.videoplatform.service.JanusService;
 import com.videoplatform.service.StreamService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +17,7 @@ public class StreamController {
 
     private final StreamService streamService;
 
+    private final JanusService janusService;
     /**
      * Создать одиночный стрим.
      * Пример запроса: POST /api/streams/create?title=MyTitle&description=MyDescription
@@ -111,5 +113,55 @@ public class StreamController {
 
         Stream stream = streamService.startGroupStream(id, principal);
         return ResponseEntity.ok(stream);
+    }
+    /**
+     * Создаёт комнату Janus (VideoRoom) для данного streamId,
+     * сохраняет webrtcSessionId в сущности Stream и возвращает roomId/pin/secret.
+     *
+     * POST /api/streams/{streamId}/janus-room
+     */
+    @PostMapping("/{streamId}/janus-room")
+    public ResponseEntity<JanusRoomResponse> createJanusRoom(
+            @PathVariable Long streamId,
+            Principal principal) {
+
+        Stream stream = streamService.getStreamById(streamId);
+        if (!stream.getUser().getUsername().equals(principal.getName())) {
+            return ResponseEntity.status(403).build();
+        }
+        if (stream.getStatus() != Stream.StreamStatus.CREATED) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        JanusRoomResponse roomResp = janusService.createVideoRoom(streamId);
+        stream.setWebrtcSessionId(roomResp.getRoomId());
+        streamService.save(stream);
+
+        return ResponseEntity.ok(roomResp);
+    }
+
+    public static class JanusRoomResponse {
+        private String roomId;
+        private String pin;
+        private String secret;
+
+        public String getRoomId() {
+            return roomId;
+        }
+        public void setRoomId(String roomId) {
+            this.roomId = roomId;
+        }
+        public String getPin() {
+            return pin;
+        }
+        public void setPin(String pin) {
+            this.pin = pin;
+        }
+        public String getSecret() {
+            return secret;
+        }
+        public void setSecret(String secret) {
+            this.secret = secret;
+        }
     }
 }
