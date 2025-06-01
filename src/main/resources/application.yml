@@ -2,22 +2,31 @@ server:
   port: 8080
 
 spring:
-  //прописать позже
-  spring.mail.host=smtp.gmail.com
-  spring.mail.port=587
-  spring.mail.username=your.email@gmail.com
-  spring.mail.password=yourpassword
-  spring.mail.properties.mail.smtp.auth=true
-  spring.mail.properties.mail.smtp.starttls.enable=tru
-  spring.elasticsearch.rest.uris=http://localhost:9200
-  spring.elasticsearch.username=
-  spring.elasticsearch.password=
+  # почтовые настройки (прописать позже)
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: your.email@gmail.com
+    password: yourpassword
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+  # Elasticsearch (если потребуется)
+  elasticsearch:
+    rest:
+      uris: http://localhost:9200
+    username:
+    password:
 
   datasource:
     url: jdbc:mysql://localhost:3306/tootifooti
     username: root
     password: password
     driver-class-name: com.mysql.cj.jdbc.Driver
+
   jpa:
     hibernate:
       ddl-auto: update
@@ -32,10 +41,16 @@ spring:
 
 stripe:
   webhook:
-    secret=whsec_XXXXXXXXXXXX:
+    secret: whsec_XXXXXXXXXXXX
   api:
     key: 124124124
 
+antmedia:
+  host: antmedia.example.com
+  app-name: LiveApp
+
 app:
   hls:
-    storage-path=/path/to/hls-storage: //указать путь
+    storage-path: /path/to/hls-storage  # указать реальный путь хранения HLS
+    jwtSecret: VerySecretSigningKey1234
+    jwtExpirationMillis: 120000    # 2 минуты
