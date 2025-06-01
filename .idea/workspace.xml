@@ -5,12 +5,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="6b0830dd-87ae-4e3a-bd51-bf949912ca92" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/videoplatform/dto/CreateSubscriptionRequestDTO.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/videoplatform/dto/NotificationDTO.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/videoplatform/dto/NotificationDTO.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/videoplatform/model/Notification.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/videoplatform/model/Notification.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/videoplatform/service/CommentService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/videoplatform/service/CommentService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/videoplatform/service/NotificationService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/videoplatform/service/NotificationService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/videoplatform/service/StreamService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/videoplatform/service/StreamService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/videoplatform/controller/SubscriptionController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/videoplatform/controller/SubscriptionController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/videoplatform/dto/SubscriptionDTO.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/videoplatform/dto/SubscriptionDTO.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/videoplatform/service/SubscriptionService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/videoplatform/service/SubscriptionService.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -92,7 +91,7 @@
       <updated>1747984140204</updated>
       <workItem from="1747984141958" duration="11355000" />
       <workItem from="1748198531583" duration="12387000" />
-      <workItem from="1748801778534" duration="3287000" />
+      <workItem from="1748801778534" duration="5714000" />
     </task>
     <task id="LOCAL-00001" summary="2">
       <created>1747988632494</created>
@@ -262,7 +261,14 @@
       <option name="project" value="LOCAL" />
       <updated>1748211415549</updated>
     </task>
-    <option name="localTasksCounter" value="25" />
+    <task id="LOCAL-00025" summary="15">
+      <created>1748805624035</created>
+      <option name="number" value="00025" />
+      <option name="presentableId" value="LOCAL-00025" />
+      <option name="project" value="LOCAL" />
+      <updated>1748805624035</updated>
+    </task>
+    <option name="localTasksCounter" value="26" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">

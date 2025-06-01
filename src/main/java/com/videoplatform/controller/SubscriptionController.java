@@ -1,11 +1,10 @@
 package com.videoplatform.controller;
 
+import com.videoplatform.dto.CreateSubscriptionRequestDTO;
 import com.videoplatform.dto.SubscriptionDTO;
-import com.videoplatform.model.SubscriptionEntity;
 import com.videoplatform.service.SubscriptionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
@@ -18,21 +17,54 @@ public class SubscriptionController {
 
     private final SubscriptionService subscriptionService;
 
-    @GetMapping
-    public ResponseEntity<List<SubscriptionDTO>> getMySubscriptions(
-            Principal principal,
-            @RequestParam(value = "status", required = false) SubscriptionEntity.SubscriptionStatus status
-    ) {
-        List<SubscriptionDTO> dtos = subscriptionService.listMySubscriptions(principal, status);
-        return ResponseEntity.ok(dtos);
+    /**
+     * Создать платную подписку.
+     * Пример: POST /api/subscriptions/create
+     * Тело (JSON):
+     * {
+     *   "channelId": 5,
+     *   "priceId": "price_1JNZWb2eZvKYlo2C6o7QhV69"
+     * }
+     */
+    @PostMapping("/create")
+    public ResponseEntity<SubscriptionDTO> createSubscription(
+            @RequestBody CreateSubscriptionRequestDTO requestDTO,
+            Principal principal) {
+
+        SubscriptionDTO dto = subscriptionService.createPaidSubscription(requestDTO, principal);
+        return ResponseEntity.ok(dto);
     }
 
-    @GetMapping("/subscribers")
-    public ResponseEntity<List<SubscriptionDTO>> getMySubscribers(
-            Principal principal,
-            @RequestParam(value = "status", required = false) SubscriptionEntity.SubscriptionStatus status
-    ) {
-        List<SubscriptionDTO> dtos = subscriptionService.listMySubscribers(principal, status);
-        return ResponseEntity.ok(dtos);
+    /**
+     * Отменить подписку.
+     * Пример: DELETE /api/subscriptions/{id}/cancel
+     */
+    @DeleteMapping("/{id}/cancel")
+    public ResponseEntity<Void> cancelSubscription(
+            @PathVariable Long id,
+            Principal principal) {
+
+        subscriptionService.cancelSubscription(id, principal);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Получить мои активные подписки.
+     * Пример: GET /api/subscriptions/me
+     */
+    @GetMapping("/me")
+    public ResponseEntity<List<SubscriptionDTO>> getMySubscriptions(Principal principal) {
+        List<SubscriptionDTO> list = subscriptionService.getMySubscriptions(principal);
+        return ResponseEntity.ok(list);
+    }
+
+    /**
+     * Получить подписчиков указанного канала (по ID канала).
+     * Пример: GET /api/subscriptions/channel/5/subscribers
+     */
+    @GetMapping("/channel/{channelId}/subscribers")
+    public ResponseEntity<List<SubscriptionDTO>> getChannelSubscribers(@PathVariable Long channelId) {
+        List<SubscriptionDTO> list = subscriptionService.getChannelSubscribers(channelId);
+        return ResponseEntity.ok(list);
     }
 }
