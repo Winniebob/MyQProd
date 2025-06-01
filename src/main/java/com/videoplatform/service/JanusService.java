@@ -1,4 +1,3 @@
-
 package com.videoplatform.service;
 
 import com.videoplatform.controller.StreamController.JanusRoomResponse;
@@ -9,9 +8,6 @@ import org.springframework.web.client.RestTemplate;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Сервис для работы с REST API Janus (плагин VideoRoom).
- */
 @Service
 public class JanusService {
 
@@ -45,7 +41,7 @@ public class JanusService {
         String handleId = ((Map<String, Object>) attachResp.getBody().get("data")).get("id").toString();
 
         // 3) Создаём саму комнату VideoRoom
-        long roomId = System.currentTimeMillis() & 0xfffffff; // простой генератор ID
+        long roomId = System.currentTimeMillis() & 0xfffffffL; // простой генератор ID
         Map<String, Object> body = new HashMap<>();
         body.put("request", "create");
         body.put("room", roomId);

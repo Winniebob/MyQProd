@@ -16,8 +16,8 @@ import java.util.List;
 public class StreamController {
 
     private final StreamService streamService;
-
     private final JanusService janusService;
+
     /**
      * Создать одиночный стрим.
      * Пример запроса: POST /api/streams/create?title=MyTitle&description=MyDescription
@@ -114,6 +114,7 @@ public class StreamController {
         Stream stream = streamService.startGroupStream(id, principal);
         return ResponseEntity.ok(stream);
     }
+
     /**
      * Создаёт комнату Janus (VideoRoom) для данного streamId,
      * сохраняет webrtcSessionId в сущности Stream и возвращает roomId/pin/secret.
