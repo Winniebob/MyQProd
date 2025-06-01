@@ -3,6 +3,7 @@ package com.videoplatform.service;
 import com.videoplatform.dto.CommentDTO;
 import com.videoplatform.dto.CreateCommentRequest;
 import com.videoplatform.model.Comment;
+import com.videoplatform.model.Notification;
 import com.videoplatform.model.User;
 import com.videoplatform.repository.CommentRepository;
 import com.videoplatform.repository.UserRepository;
@@ -11,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.cache.annotation.Cacheable;
+
 import java.security.Principal;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -30,7 +32,6 @@ public class CommentService {
     @Transactional
     public CommentDTO addComment(CreateCommentRequest req, Principal principal) {
         final int MAX_COMMENT_LENGTH = 1000;
-        final long COMMENT_COOLDOWN_SECONDS = 30;
 
         String commentText = req.getText();
         if (commentText == null || commentText.trim().isEmpty()) {
@@ -81,7 +82,13 @@ public class CommentService {
         Comment saved = commentRepository.save(comment);
 
         if (parent != null && !parent.getAuthor().equals(author)) {
-            notificationService.createNotification(parent.getAuthor(), "Ваш комментарий получил ответ.");
+            // Используем NEW_COMMENT как тип уведомления при ответе
+            notificationService.createNotification(
+                    parent.getAuthor(),
+                    Notification.NotificationType.NEW_COMMENT,
+                    "Ваш комментарий получил ответ.",
+                    null
+            );
         }
 
         return mapToDtoWithChildren(saved);
@@ -153,6 +160,7 @@ public class CommentService {
         dto.setChildren(children);
         return dto;
     }
+
     @Transactional
     public CommentDTO updateComment(Long commentId, String newText, String username) {
         Comment comment = commentRepository.findByIdAndDeletedFalse(commentId)

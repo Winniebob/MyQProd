@@ -21,34 +21,49 @@ public class NotificationService {
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
 
-
-
-    public void notifyUsers(List<User> recipients, Notification.NotificationType type, String message, Long streamId) {
+    /**
+     * Рассылает уведомление списку пользователей.
+     *
+     * @param recipients список получателей
+     * @param type       тип уведомления
+     * @param message    текст уведомления
+     * @param streamId   id стрима (может быть null)
+     */
+    public void notifyUsers(List<User> recipients,
+                            Notification.NotificationType type,
+                            String message,
+                            Long streamId) {
         for (User recipient : recipients) {
             Boolean enabled = recipient.getNotificationSettings() != null
                     ? recipient.getNotificationSettings().getOrDefault(type.name(), true)
                     : true;
             if (!enabled) continue;
+
             Notification notification = new Notification();
             notification.setRecipient(recipient);
             notification.setType(type);
             notification.setMessage(message);
             notification.setRead(false);
             notification.setCreatedAt(LocalDateTime.now());
-            notification.setStreamId(streamId); // поле streamId должно быть в Notification.java
+            notification.setStreamId(streamId);
             notificationRepository.save(notification);
         }
     }
+
+    /**
+     * Получить все уведомления (по типу, если type != null) для текущего пользователя.
+     */
     public List<NotificationDTO> getNotifications(Principal principal, Notification.NotificationType type) {
         User user = userRepository.findByUsername(principal.getName())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         List<Notification> notifications;
-
         if (type != null) {
-            notifications = notificationRepository.findByRecipientAndTypeOrderByCreatedAtDesc(user, type);
+            notifications = notificationRepository
+                    .findByRecipientAndTypeOrderByCreatedAtDesc(user, type);
         } else {
-            notifications = notificationRepository.findByRecipientOrderByCreatedAtDesc(user);
+            notifications = notificationRepository
+                    .findByRecipientOrderByCreatedAtDesc(user);
         }
 
         return notifications.stream()
@@ -56,16 +71,20 @@ public class NotificationService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Получить непрочитанные уведомления (по типу, если type != null) для текущего пользователя.
+     */
     public List<NotificationDTO> getUnreadNotifications(Principal principal, Notification.NotificationType type) {
         User user = userRepository.findByUsername(principal.getName())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         List<Notification> notifications;
-
         if (type != null) {
-            notifications = notificationRepository.findByRecipientAndReadFalseAndType(user, type);
+            notifications = notificationRepository
+                    .findByRecipientAndReadFalseAndType(user, type);
         } else {
-            notifications = notificationRepository.findByRecipientAndReadFalse(user);
+            notifications = notificationRepository
+                    .findByRecipientAndReadFalse(user);
         }
 
         return notifications.stream()
@@ -73,6 +92,9 @@ public class NotificationService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Пометить уведомление как прочитанное.
+     */
     public void markAsRead(Long id, Principal principal) {
         Notification notification = notificationRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Notification not found"));
@@ -85,27 +107,41 @@ public class NotificationService {
         notificationRepository.save(notification);
     }
 
-    private NotificationDTO mapToDto(Notification notification) {
-        NotificationDTO dto = new NotificationDTO();
-        dto.setId(notification.getId());
-        dto.setMessage(notification.getMessage());
-        dto.setRead(notification.isRead());
-        dto.setCreatedAt(notification.getCreatedAt());
-        return dto;
-    }
+    /**
+     * Получить настройки уведомлений для пользователя.
+     */
     public Map<String, Boolean> getUserNotificationSettings(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         return user.getNotificationSettings();
     }
 
+    /**
+     * Обновить настройки уведомлений пользователя.
+     */
     public void updateUserNotificationSettings(Long userId, Map<String, Boolean> settings) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         user.setNotificationSettings(settings);
         userRepository.save(user);
     }
-    public void createNotification(User recipient, Notification.NotificationType type, String message) {
+
+    /**
+     * Старая сигнатура (без передачи streamId). Просто делегируем null.
+     */
+    public void createNotification(User recipient,
+                                   Notification.NotificationType type,
+                                   String message) {
+        createNotification(recipient, type, message, null);
+    }
+
+    /**
+     * Основной метод: создаёт уведомление и сохраняет поле streamId.
+     */
+    public void createNotification(User recipient,
+                                   Notification.NotificationType type,
+                                   String message,
+                                   Long streamId) {
         Boolean enabled = recipient.getNotificationSettings() != null
                 ? recipient.getNotificationSettings().getOrDefault(type.name(), true)
                 : true;
@@ -118,7 +154,17 @@ public class NotificationService {
         notification.setMessage(message);
         notification.setRead(false);
         notification.setCreatedAt(LocalDateTime.now());
+        notification.setStreamId(streamId);
         notificationRepository.save(notification);
     }
 
+    private NotificationDTO mapToDto(Notification notification) {
+        NotificationDTO dto = new NotificationDTO();
+        dto.setId(notification.getId());
+        dto.setMessage(notification.getMessage());
+        dto.setRead(notification.isRead());
+        dto.setCreatedAt(notification.getCreatedAt());
+        dto.setStreamId(notification.getStreamId());
+        return dto;
+    }
 }
