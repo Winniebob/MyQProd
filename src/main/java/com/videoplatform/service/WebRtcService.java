@@ -38,9 +38,7 @@ public class WebRtcService {
         return (int) sessions.values().stream().filter(s -> s.getStreamId().equals(streamId)).count();
     }
 
-    /**
-     * Удаление «протухших» сессий старше ttlMinutes.
-     */
+    /** Удаление «протухших» сессий старше ttlMinutes. */
     public int cleanupExpired(int ttlMinutes) {
         LocalDateTime cutoff = LocalDateTime.now().minusMinutes(ttlMinutes);
         int before = sessions.size();
@@ -48,36 +46,22 @@ public class WebRtcService {
         return before - sessions.size();
     }
 
-    private static class WebRtcSession {
-        public static class WebRtcSession {
-            private final String sessionId;
-            private final Long streamId;
-            private final User user;
-            private final LocalDateTime createdAt;
+    public static class WebRtcSession {
+        private final String sessionId;
+        private final Long streamId;
+        private final User user;
+        private final LocalDateTime createdAt;
 
-            public WebRtcSession(String sessionId, Long streamId, User user, LocalDateTime createdAt) {
-                this.sessionId = sessionId;
-                this.streamId = streamId;
-                this.user = user;
-                this.createdAt = createdAt;
-            }
-
-            // getters if needed
-            public String getSessionId() {
-                return sessionId;
-            }
-
-            public Long getStreamId() {
-                return streamId;
-            }
-
-            public User getUser() {
-                return user;
-            }
-
-            public LocalDateTime getCreatedAt() {
-                return createdAt;
-            }
+        public WebRtcSession(String sessionId, Long streamId, User user, LocalDateTime createdAt) {
+            this.sessionId = sessionId;
+            this.streamId = streamId;
+            this.user = user;
+            this.createdAt = createdAt;
         }
+
+        public String getSessionId() { return sessionId; }
+        public Long getStreamId() { return streamId; }
+        public User getUser() { return user; }
+        public LocalDateTime getCreatedAt() { return createdAt; }
     }
 }

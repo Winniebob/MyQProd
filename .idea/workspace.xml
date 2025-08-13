@@ -5,24 +5,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="6b0830dd-87ae-4e3a-bd51-bf949912ca92" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/videoplatform/dto/ChatMessageDTO.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/videoplatform/model/ChatMessage.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/videoplatform/model/WebRtcParticipant.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/videoplatform/model/WebRtcRole.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/videoplatform/model/WebRtcRoom.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/videoplatform/model/WebRtcRoomStatus.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/videoplatform/repository/ChatMessageRepository.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/videoplatform/repository/WebRtcRoomRepository.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/videoplatform/config/WebSocketConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/videoplatform/config/WebSocketConfig.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/videoplatform/controller/ChatController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/videoplatform/controller/ChatController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/videoplatform/controller/WebRtcSignalingController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/videoplatform/controller/WebRtcSignalingController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/videoplatform/dto/MessageDTO.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/videoplatform/dto/MessageDTO.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/videoplatform/dto/SendMessageRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/videoplatform/dto/SendMessageRequest.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/videoplatform/service/ChatService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/videoplatform/service/ChatService.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/com/videoplatform/service/JanusService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/videoplatform/service/JanusService.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/com/videoplatform/service/WebRtcService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/videoplatform/service/WebRtcService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/application.yml" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/application.yml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -56,7 +41,7 @@
     </option>
   </component>
   <component name="ProblemsViewState">
-    <option name="selectedTabId" value="ProjectErrors" />
+    <option name="selectedTabId" value="CurrentFile" />
   </component>
   <component name="ProjectId" id="2xUEESlT1FmisVfMEtYl2gOH8Wu" />
   <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
@@ -110,7 +95,7 @@
       <workItem from="1748198531583" duration="12387000" />
       <workItem from="1748801778534" duration="11457000" />
       <workItem from="1751649682683" duration="3731000" />
-      <workItem from="1755032134747" duration="3664000" />
+      <workItem from="1755032134747" duration="5114000" />
     </task>
     <task id="LOCAL-00001" summary="2">
       <created>1747988632494</created>
@@ -315,7 +300,14 @@
       <option name="project" value="LOCAL" />
       <updated>1748812897983</updated>
     </task>
-    <option name="localTasksCounter" value="30" />
+    <task id="LOCAL-00030" summary="19">
+      <created>1755107321755</created>
+      <option name="number" value="00030" />
+      <option name="presentableId" value="LOCAL-00030" />
+      <option name="project" value="LOCAL" />
+      <updated>1755107321755</updated>
+    </task>
+    <option name="localTasksCounter" value="31" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
